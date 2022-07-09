@@ -1,0 +1,35 @@
+import core
+import time
+
+class Circle < core.BasicObject
+  def __init:
+    super;.__init
+    self.time_listener = lambda signal: self.end_time
+  end
+
+  def ready:
+    print "circle is ready"
+    self.get_scene;.connect "time", self.time_listener
+  end
+
+  def free:
+    self.get_scene;.disconnect "time", self.time_listener
+    super;.free
+  end
+
+  def end_time:
+    print "Time is up."
+  end
+end
+
+root = core.Scene
+circle = Circle
+
+root.add circle, "circle"
+
+time.sleep 1
+root.emit_signal { "type": "time" }
+
+circle.free
+
+print circle.id

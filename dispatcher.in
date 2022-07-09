@@ -1,0 +1,79 @@
+ADDED = "added"
+READY = "ready"
+
+class Dispatcher
+  def __init:
+    self.signals = nil
+  end
+
+  def connect type, signal:
+    if self.signals == nil:
+      self.signals = {}
+    end
+
+    signals = self.signals
+
+    if not type in signals:
+      signals[type] = []
+    end
+
+    if not signal in signals[type]:
+      signals[type].append(signal)
+    end
+  end
+
+  def disconnect type, signal:
+    if self.signals == nil:
+      return
+    end
+
+    signals = self.signals
+    def splice num, start, len:
+      ret = num[start: len|]
+      num[start: len|] = nil
+      return ret
+    end
+
+
+    signal_array = signals[type]
+
+    if signal_array != nil:
+      index = signal_array.index(signal)
+
+      if index != nil:
+        signal_array = signal_array[index::1]
+      end
+    end
+  end
+
+  def has_signal type, listener:
+    if self.signals == nil:
+      return
+    end
+
+    listeners = self.signals
+    return listeners[type] != nil and \
+        listener in listeners[type]
+      # listeners[type].index(listener) != nil
+  end
+
+  def emit_signal signal:
+    if self.signals == nil:
+      return
+    end
+
+    signals = self.signals
+    signal_array = signals[signal["type"]]
+
+    if signal_array != nil:
+      signal["target"] = self
+
+      array = signal_array  # signal_array.splice(0)
+      for sig_prog in array:
+        sig_prog(signal)
+      end
+
+      signal["target"] = nil
+    end
+  end
+end

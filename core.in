@@ -1,0 +1,129 @@
+import dispatcher as dis
+
+class BasicObject < dis.Dispatcher
+  def __init:
+    super().__init
+    self.added_listener = lambda signal : self.added_signal signal["object"]
+
+    self.id = nil
+    self.parent = nil
+    self.children = []
+  end
+
+  def add object, id = nil:
+    if object == self:
+      print f"{type(self).__name__}.add: object can't be added as a child of itself."
+      return self
+    end
+
+    if object:
+      if object.parent != nil:
+        object.parent.remove(object)
+      end
+
+      object.parent = self
+
+      if object.id == nil:
+        object.id = id
+      end
+  
+      self.children.append(object)
+  
+      self.add_signals object
+    else:
+      print f"{type(self).__name__}.add: object not an instance of {type(self).__name__}"
+    end
+
+    return self
+  end
+
+  def remove object:
+    index = self.children.index(object)
+    if index:
+      object.parent = nil
+      self.children.splice(index, 1)
+    end
+
+    return self
+  end
+
+  def free:
+    if len self.children; > 0:
+      for child in self.children:
+        # Free next children
+        child.free
+        child.free_signals
+
+        self.remove child
+      end
+    end
+
+    self.free_signals
+    self.parent.remove self
+  end
+
+  def free_signals:
+    if self.has_signal dis.ADDED, self.added_listener:
+      self.disconnect dis.ADDED, self.added_listener
+    end
+  end
+
+  def get_scene is_root = false:
+    scene = self
+    parent = scene.parent
+
+    while true:
+      if is_root:
+        if parent == nil:
+          break
+        end
+      else:
+        is_class = type(parent).__name__ == Scene.__name__
+        is_super_class = type(parent).mro()[1].__name__ == Scene.__name__
+        if is_class or is_super_class:
+          scene = parent
+          break
+        end
+      end
+
+      scene = parent
+      parent = scene.parent
+    end
+
+    return scene
+  end
+
+  def find_children id:
+    for child in self.children:
+      if child.id == id:
+        return child
+      end
+    end
+
+    return nil
+  end
+
+  def add_signals object:
+    # Added
+    if dis.READY in dir(object):
+      object.connect dis.ADDED, self.added_listener
+      object.emit_signal {"type": dis.ADDED, "object": object }
+    end
+  end
+
+  def added_signal object:
+    object.ready()
+
+    if object.id:
+      self.get_scene true;.emit_signal|({
+        "type": dis.READY, "id": object.id
+      })
+    end
+  end
+end
+
+class Scene < BasicObject
+  def __init:
+    super().__init
+  end
+end
